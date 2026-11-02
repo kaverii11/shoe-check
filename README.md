@@ -22,13 +22,37 @@ Phone photos of sneakers are often blurry: the camera focused on the floor, or t
 
 int8 halves the latency but costs ~10 points of accuracy. MobileNetV3's hard-swish activations and squeeze-and-excitation layers are known to be sensitive to post-training quantization. The next step would be quantization-aware training; until then, float16 gives half the size with no loss.
 
-> **Synthetic blur is the easy case**, so every method scores ~99% here. The real test is real phone photos; see *Real-world evaluation* below.
+> **Synthetic blur is the easy case**, so every method scores ~99% here. On **real** camera blur the CNN holds up (95.6%) and the classic scores drop to ~88%; see *Real-world evaluation* below.
 
-## Real-world evaluation (in progress)
-- **Real phone photos of sneakers:** sharp, out-of-focus and motion-blurred shots on different floors and lighting, including portrait-mode photos where the shoe is sharp and the background is deliberately blurred. A whole-image sharpness score can wrongly call these "blurry", so each classic score is also computed **on the shoe only** (GrabCut segmentation) and on a centre crop.
-- **[Blur Dataset](https://www.kaggle.com/datasets/kwentar/blur-dataset)** (CC0): 1,050 real photos from 66 phones and cameras, with 350 sharp, 350 defocused and 350 motion-blurred.
+## Real-world evaluation
+Every model above was trained **only on synthetic blur**. These tests use real camera blur it never saw.
 
-Results will be added here.
+### 1. Blur Dataset: 1,050 real photos from 66 phones and cameras
+[Blur Dataset](https://www.kaggle.com/datasets/kwentar/blur-dataset) (CC0): 350 sharp, 350 out-of-focus, and 350 motion-blurred photos of everyday scenes (not shoes).
+
+| Method | Accuracy | Out-of-focus caught | Motion blur caught | Sharp kept | ROC-AUC |
+|---|---|---|---|---|---|
+| Laplacian variance, whole photo | 87.1% | | | | 0.954 |
+| Logistic regression (3 scores), whole photo | 88.7% | 96.6% | 72.0% | 97.4% | 0.968 |
+| Logistic regression, centre crop | 86.9% | 96.0% | 67.1% | 97.4% | 0.966 |
+| Logistic regression, main object only (GrabCut) | 83.8% | 93.7% | 59.4% | 98.3% | 0.964 |
+| **MobileNetV3-Small, float16** | **95.6%** | **98.6%** | **92.3%** | **96.0%** | **0.989** |
+
+### 2. Phone photos of real sneakers: 30 photos, 3 pairs of shoes
+18 sharp and 12 blurry (out of focus, strong and slight motion blur), on different floors and lighting.
+
+| Method | Accuracy | Blurry caught | Sharp kept | ROC-AUC |
+|---|---|---|---|---|
+| Logistic regression, whole photo | 90.0% | 10 / 12 | 17 / 18 | 0.907 |
+| Logistic regression, centre crop | 86.7% | 9 / 12 | 17 / 18 | 0.921 |
+| Logistic regression, shoe only (GrabCut) | 83.3% | 8 / 12 | 17 / 18 | 0.963 |
+| **MobileNetV3-Small, float16** | **93.3%** | **11 / 12** | **17 / 18** | **0.986** |
+
+### What this shows
+- **The CNN transfers from synthetic to real blur far better than the classic scores:** 95.6% vs 88.7% on real camera photos.
+- **Motion blur is where classic sharpness scores fail.** They catch 96% of out-of-focus photos but only 72% of motion-blurred ones. A blur streak along one direction still leaves sharp edges in the other direction, which keeps the Laplacian variance high.
+- **Scoring only the shoe ranks photos best** among the classic variants on the sneaker photos (ROC-AUC 0.963), but with the threshold tuned on synthetic data it lets more blurry photos through. The threshold needs re-tuning on real photos.
+- **The CNN's hardest case is *slight* motion blur:** its one miss among the blurry sneaker photos was a pair that's only a little smeared.
 
 ## How it works
 1. **Data** (`src/prepare_data.py`): 3,930 sneaker photos from the [Sneakers dataset](https://huggingface.co/datasets/ipogorelov/sneakers) (MIT). Each photo becomes one sharp and one blurred version, and the 70/15/15 split is done **by source photo**, so the same shoe never appears in two splits. The softest 10% of source photos were dropped, since scraped photos aren't guaranteed sharp. Working resolution is 256 px.
@@ -46,7 +70,8 @@ python src/prepare_data.py --parquet data/raw/*.parquet --out data/synthetic
 python src/classic.py --data data/synthetic --out results
 python src/train_cnn.py --data data/synthetic --out results
 python src/export.py --data data/synthetic --out results
-python src/evaluate_real.py --photos data/real --out results   # data/real/sharp, data/real/blurry
+python src/evaluate_real.py --sharp data/real/sharp --blurry data/real/blurry --name phone_shoes
+python src/evaluate_real.py --sharp data/kaggle/sharp --blurry data/kaggle/defocused_blurred data/kaggle/motion_blurred --name kaggle_blur
 python app.py
 ```
 The trained float16 model (`results/shoe_check_fp16.onnx`) and classic models (`results/classic_models.pkl`) are included, so `python app.py` works without retraining.
