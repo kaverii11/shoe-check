@@ -25,7 +25,7 @@ int8 halves the latency but costs ~10 points of accuracy. MobileNetV3's hard-swi
 > **Synthetic blur is the easy case**, so every method scores ~99% here. The real test is real phone photos; see *Real-world evaluation* below.
 
 ## Real-world evaluation (in progress)
-- **My own phone photos of sneakers:** sharp, out-of-focus and motion-blurred shots on different floors and lighting, including portrait-mode photos where the shoe is sharp and the background is deliberately blurred. A whole-image sharpness score can wrongly call these "blurry", so each classic score is also computed **on the shoe only** (GrabCut segmentation) and on a centre crop.
+- **Real phone photos of sneakers:** sharp, out-of-focus and motion-blurred shots on different floors and lighting, including portrait-mode photos where the shoe is sharp and the background is deliberately blurred. A whole-image sharpness score can wrongly call these "blurry", so each classic score is also computed **on the shoe only** (GrabCut segmentation) and on a centre crop.
 - **[Blur Dataset](https://www.kaggle.com/datasets/kwentar/blur-dataset)** (CC0): 1,050 real photos from 66 phones and cameras, with 350 sharp, 350 defocused and 350 motion-blurred.
 
 Results will be added here.
