@@ -1,6 +1,6 @@
 data/
 results/*.pt
-results/*.pkl
-results/*.onnx
+results/shoe_check_fp32.onnx
+results/shoe_check_int8.onnx
 __pycache__/
 .DS_Store

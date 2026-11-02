@@ -1,9 +1,11 @@
-"""Evaluate every method on real phone photos: <dir>/sharp/* and <dir>/blurry/*.
+"""Evaluate every method on real photos: one folder of sharp images and one or more folders of blurry ones.
 
 Each classical score is tried on the full frame, the centre crop, and the shoe region (GrabCut),
 because portrait-mode photos have a sharp shoe on a deliberately blurred background.
 
-Usage: python src/evaluate_real.py --photos data/real --out results
+Usage:
+  python src/evaluate_real.py --sharp data/real/sharp --blurry data/real/blurry --name my_phone
+  python src/evaluate_real.py --sharp data/kaggle/sharp --blurry data/kaggle/defocused_blurred data/kaggle/motion_blurred --name kaggle_blur
 """
 import argparse
 import json
@@ -35,11 +37,14 @@ def load(path):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--photos", default="data/real")
+    ap.add_argument("--sharp", required=True)
+    ap.add_argument("--blurry", nargs="+", required=True)
+    ap.add_argument("--name", default="real")
     ap.add_argument("--out", default="results")
     args = ap.parse_args()
-    items = [(os.path.join(args.photos, c, f), int(c == "blurry"), f)
-             for c in ("sharp", "blurry") for f in sorted(os.listdir(os.path.join(args.photos, c))) if not f.startswith(".")]
+    folders = [(args.sharp, 0)] + [(d, 1) for d in args.blurry]
+    items = [(os.path.join(d, f), label, os.path.join(os.path.basename(os.path.normpath(d)), f))
+             for d, label in folders for f in sorted(os.listdir(d)) if not f.startswith(".")]
     imgs = [load(p) for p, _, _ in items]
     y = np.array([l for _, l, _ in items])
     names = [f for _, _, f in items]
@@ -69,8 +74,15 @@ def main():
         for n, p in zip(names, prob):
             per_photo[n][f"cnn_{variant}"] = round(float(p), 3)
 
-    with open(os.path.join(args.out, "real_metrics.json"), "w") as f:
-        json.dump({"n_sharp": int((y == 0).sum()), "n_blurry": int(y.sum()), "results": results, "per_photo": per_photo}, f, indent=2)
+    # Recall on each kind of blur separately (e.g. defocus vs motion), at each method's 0.5 / tuned threshold
+    groups = sorted({n.split(os.sep)[0] for n, l in zip(names, y) if l == 1})
+    by_type = {}
+    for key in [k for k in next(iter(per_photo.values())) if k != "label"]:
+        by_type[key] = {g: float(np.mean([per_photo[n][key] >= 0.5 for n, l in zip(names, y) if l == 1 and n.startswith(g + os.sep)])) for g in groups}
+        by_type[key]["sharp_kept"] = float(np.mean([per_photo[n][key] < 0.5 for n, l in zip(names, y) if l == 0]))
+    with open(os.path.join(args.out, f"{args.name}_metrics.json"), "w") as f:
+        json.dump({"n_sharp": int((y == 0).sum()), "n_blurry": int(y.sum()), "results": results, "by_blur_type": by_type, "per_photo": per_photo}, f, indent=2)
+    print(json.dumps(by_type, indent=1))
     for k, v in results.items():
         print(f"{k:38s} acc {v['accuracy']:.3f}  F1 {v['f1_blurry']:.3f}  AUC {v['roc_auc']:.3f}")
 
