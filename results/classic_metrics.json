@@ -1,0 +1,30 @@
+{
+  "test": {
+    "laplacian_var": {
+      "accuracy": 0.9889830508474576,
+      "f1_blurry": 0.9888983774551665,
+      "roc_auc": 0.9990347601264005
+    },
+    "tenengrad": {
+      "accuracy": 0.8584745762711864,
+      "f1_blurry": 0.8566523605150215,
+      "roc_auc": 0.934168342430336
+    },
+    "fft_highfreq": {
+      "accuracy": 0.8440677966101695,
+      "f1_blurry": 0.8362989323843416,
+      "roc_auc": 0.9255185291582877
+    },
+    "logistic_regression": {
+      "accuracy": 0.9923728813559322,
+      "f1_blurry": 0.9923273657289002,
+      "roc_auc": 0.9997299626544097
+    },
+    "features_ms_per_image_cpu": 2.5021260394714773
+  },
+  "thresholds": {
+    "laplacian_var": 5.435281228627002,
+    "tenengrad": 8.76109640629887,
+    "fft_highfreq": 0.038395412190542016
+  }
+}

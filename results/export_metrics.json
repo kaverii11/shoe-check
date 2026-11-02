@@ -1,0 +1,17 @@
+{
+  "fp32": {
+    "size_mb": 6.085133,
+    "ms_per_image_1_cpu_thread": 5.201788750127889,
+    "test_accuracy": 0.9991525423728813
+  },
+  "fp16": {
+    "size_mb": 3.070221,
+    "ms_per_image_1_cpu_thread": 5.2184289548313245,
+    "test_accuracy": 0.9991525423728813
+  },
+  "int8": {
+    "size_mb": 1.849359,
+    "ms_per_image_1_cpu_thread": 2.494186455151066,
+    "test_accuracy": 0.8957627118644068
+  }
+}
