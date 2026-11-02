@@ -39,20 +39,20 @@ Every model above was trained **only on synthetic blur**. These tests use real c
 | **MobileNetV3-Small, float16** | **95.6%** | **98.6%** | **92.3%** | **96.0%** | **0.989** |
 
 ### 2. Phone photos of real sneakers: 30 photos, 3 pairs of shoes
-18 sharp and 12 blurry (out of focus, strong and slight motion blur), on different floors and lighting.
+17 sharp and 13 blurry (out of focus, strong and slight motion blur), on different floors and lighting. Labels were set by eye from the full-resolution photos. One photo first labelled sharp was re-checked by the photographer after all methods disagreed, and was confirmed blurry.
 
 | Method | Accuracy | Blurry caught | Sharp kept | ROC-AUC |
 |---|---|---|---|---|
-| Logistic regression, whole photo | 90.0% | 10 / 12 | 17 / 18 | 0.907 |
-| Logistic regression, centre crop | 86.7% | 9 / 12 | 17 / 18 | 0.921 |
-| Logistic regression, shoe only (GrabCut) | 83.3% | 8 / 12 | 17 / 18 | 0.963 |
-| **MobileNetV3-Small, float16** | **93.3%** | **11 / 12** | **17 / 18** | **0.986** |
+| Logistic regression, whole photo | 93.3% | 11 / 13 | 17 / 17 | 0.941 |
+| Logistic regression, centre crop | 90.0% | 10 / 13 | 17 / 17 | 0.950 |
+| Logistic regression, shoe only (GrabCut) | 86.7% | 9 / 13 | 17 / 17 | 0.991 |
+| **MobileNetV3-Small, float16** | **96.7%** | **12 / 13** | **17 / 17** | **1.000** |
 
 ### What this shows
 - **The CNN transfers from synthetic to real blur far better than the classic scores:** 95.6% vs 88.7% on real camera photos.
 - **Motion blur is where classic sharpness scores fail.** They catch 96% of out-of-focus photos but only 72% of motion-blurred ones. A blur streak along one direction still leaves sharp edges in the other direction, which keeps the Laplacian variance high.
-- **Scoring only the shoe ranks photos best** among the classic variants on the sneaker photos (ROC-AUC 0.963), but with the threshold tuned on synthetic data it lets more blurry photos through. The threshold needs re-tuning on real photos.
-- **The CNN's hardest case is *slight* motion blur:** its one miss among the blurry sneaker photos was a pair that's only a little smeared.
+- **Scoring only the shoe ranks photos best** among the classic variants on the sneaker photos (ROC-AUC 0.991), but with the threshold tuned on synthetic data it lets more blurry photos through. The threshold needs re-tuning on real photos.
+- **The CNN's hardest case is *slight* motion blur:** its only miss on the sneaker photos was a pair that's only a little smeared.
 
 ## How it works
 1. **Data** (`src/prepare_data.py`): 3,930 sneaker photos from the [Sneakers dataset](https://huggingface.co/datasets/ipogorelov/sneakers) (MIT). Each photo becomes one sharp and one blurred version, and the 70/15/15 split is done **by source photo**, so the same shoe never appears in two splits. The softest 10% of source photos were dropped, since scraped photos aren't guaranteed sharp. Working resolution is 256 px.
